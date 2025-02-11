@@ -1,5 +1,14 @@
 local player = game.Players.LocalPlayer
 
+-- Function to prevent damage
+local function preventDamage(humanoid)
+    humanoid:GetPropertyChangedSignal("Health"):Connect(function()
+        if humanoid:GetAttribute("Invincible") then
+            humanoid.Health = humanoid.MaxHealth -- Instantly restore health
+        end
+    end)
+end
+
 -- Function to create the Invincibility HUD
 local function createInvincibilityHUD()
     local gui = Instance.new("ScreenGui")
@@ -63,18 +72,20 @@ local function createInvincibilityHUD()
             local humanoid = character:FindFirstChildOfClass("Humanoid")
             if humanoid then
                 humanoid:SetAttribute("Invincible", invincible)
+                
+                if invincible then
+                    preventDamage(humanoid) -- Prevent damage instantly
+                end
             end
         end
     end)
 
-    -- Damage prevention
+    -- Prevent damage when the character respawns
     player.CharacterAdded:Connect(function(character)
         local humanoid = character:WaitForChild("Humanoid")
-        humanoid:GetPropertyChangedSignal("Health"):Connect(function()
-            if invincible then
-                humanoid.Health = humanoid.MaxHealth
-            end
-        end)
+        if invincible then
+            preventDamage(humanoid)
+        end
     end)
 end
 
