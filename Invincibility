@@ -1,0 +1,145 @@
+local player = game.Players.LocalPlayer
+
+-- Function to create the Invincibility HUD
+local function createInvincibilityHUD()
+    local gui = Instance.new("ScreenGui")
+    gui.Parent = player:WaitForChild("PlayerGui")
+
+    local frame = Instance.new("Frame")
+    frame.Size = UDim2.new(0, 200, 0, 90)
+    frame.Position = UDim2.new(0.5, -100, 0.2, 0)
+    frame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+    frame.BorderSizePixel = 2
+    frame.BorderColor3 = Color3.fromRGB(200, 200, 200)
+    frame.Parent = gui
+    frame.Active = true
+    frame.Draggable = true
+
+    local title = Instance.new("TextLabel")
+    title.Size = UDim2.new(1, 0, 0, 25)
+    title.Text = "Invincibility Menu"
+    title.TextColor3 = Color3.fromRGB(255, 255, 255)
+    title.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    title.Font = Enum.Font.SourceSansBold
+    title.TextSize = 16
+    title.Parent = frame
+
+    local checkbox = Instance.new("TextButton")
+    checkbox.Size = UDim2.new(0, 20, 0, 20)
+    checkbox.Position = UDim2.new(0, 10, 0, 35)
+    checkbox.Text = "☐"
+    checkbox.TextColor3 = Color3.fromRGB(255, 255, 255)
+    checkbox.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+    checkbox.BorderSizePixel = 1
+    checkbox.Parent = frame
+
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(0, 100, 0, 20)
+    label.Position = UDim2.new(0, 40, 0, 35)
+    label.Text = "Enable Invincibility"
+    label.TextColor3 = Color3.fromRGB(255, 255, 255)
+    label.BackgroundTransparency = 1
+    label.Parent = frame
+
+    -- Credit Label
+    local creditLabel = Instance.new("TextLabel")
+    creditLabel.Size = UDim2.new(1, 0, 0, 20)
+    creditLabel.Position = UDim2.new(0, 0, 1, -20)
+    creditLabel.Text = "Made by specc"
+    creditLabel.TextColor3 = Color3.fromRGB(150, 150, 150)
+    creditLabel.BackgroundTransparency = 1
+    creditLabel.TextScaled = true
+    creditLabel.Parent = frame
+
+    local invincible = false
+
+    -- Toggle function
+    checkbox.MouseButton1Click:Connect(function()
+        invincible = not invincible
+        checkbox.Text = invincible and "☑" or "☐"
+
+        local character = player.Character
+        if character then
+            local humanoid = character:FindFirstChildOfClass("Humanoid")
+            if humanoid then
+                humanoid:SetAttribute("Invincible", invincible)
+            end
+        end
+    end)
+
+    -- Damage prevention
+    player.CharacterAdded:Connect(function(character)
+        local humanoid = character:WaitForChild("Humanoid")
+        humanoid:GetPropertyChangedSignal("Health"):Connect(function()
+            if invincible then
+                humanoid.Health = humanoid.MaxHealth
+            end
+        end)
+    end)
+end
+
+-- Function to create the Admin Code HUD
+local function createAdminHUD()
+    local gui = Instance.new("ScreenGui")
+    gui.Parent = player:WaitForChild("PlayerGui")
+
+    local frame = Instance.new("Frame")
+    frame.Size = UDim2.new(0, 200, 0, 100)
+    frame.Position = UDim2.new(0.5, -100, 0.3, 0)
+    frame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+    frame.BorderSizePixel = 2
+    frame.BorderColor3 = Color3.fromRGB(200, 200, 200)
+    frame.Parent = gui
+    frame.Active = true
+    frame.Draggable = true
+
+    local title = Instance.new("TextLabel")
+    title.Size = UDim2.new(1, 0, 0, 25)
+    title.Text = "Admin Access"
+    title.TextColor3 = Color3.fromRGB(255, 255, 255)
+    title.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    title.Font = Enum.Font.SourceSansBold
+    title.TextSize = 16
+    title.Parent = frame
+
+    local codeBox = Instance.new("TextBox")
+    codeBox.Size = UDim2.new(0, 180, 0, 25)
+    codeBox.Position = UDim2.new(0, 10, 0, 35)
+    codeBox.PlaceholderText = "Enter Admin Code"
+    codeBox.TextColor3 = Color3.fromRGB(0, 0, 0)
+    codeBox.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    codeBox.Parent = frame
+
+    local submitButton = Instance.new("TextButton")
+    submitButton.Size = UDim2.new(0, 180, 0, 25)
+    submitButton.Position = UDim2.new(0, 10, 0, 65)
+    submitButton.Text = "Submit"
+    submitButton.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
+    submitButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    submitButton.Parent = frame
+
+    local locked = false -- Prevents multiple attempts
+
+    -- Admin Code Check
+    submitButton.MouseButton1Click:Connect(function()
+        if locked then return end
+
+        if codeBox.Text == "MTLS" then
+            gui:Destroy() -- Remove the Admin HUD
+            createInvincibilityHUD() -- Show Invincibility HUD
+        else
+            codeBox.Text = "LOCKED"
+            codeBox.TextColor3 = Color3.fromRGB(255, 0, 0)
+            locked = true -- Locks input permanently
+        end
+    end)
+end
+
+-- Reload HUD on Death
+player.CharacterAdded:Connect(function()
+    wait(1) -- Small delay to ensure character loads
+    createAdminHUD() -- Show admin HUD first
+end)
+
+-- Initial Load
+createAdminHUD()
