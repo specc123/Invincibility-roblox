@@ -1,10 +1,45 @@
 local player = game.Players.LocalPlayer
 
--- Function to prevent damage
-local function preventDamage(humanoid)
+-- Function to make player truly invincible
+local function preventDamage(humanoid, character)
+    if not humanoid or not character then return end
+
+    -- Prevent health reduction
     humanoid:GetPropertyChangedSignal("Health"):Connect(function()
         if humanoid:GetAttribute("Invincible") then
-            humanoid.Health = humanoid.MaxHealth -- Instantly restore health
+            humanoid.Health = humanoid.MaxHealth
+        end
+    end)
+
+    -- Block death state
+    humanoid.StateChanged:Connect(function(_, newState)
+        if humanoid:GetAttribute("Invincible") and newState == Enum.HumanoidStateType.Dead then
+            humanoid:ChangeState(Enum.HumanoidStateType.GettingUp)
+        end
+    end)
+
+    -- Prevent damage from projectiles
+    for _, part in pairs(character:GetChildren()) do
+        if part:IsA("BasePart") then
+            part.Touched:Connect(function(hit)
+                if humanoid:GetAttribute("Invincible") then
+                    local attacker = game.Players:GetPlayerFromCharacter(hit.Parent)
+                    if attacker then
+                        humanoid.Health = humanoid.MaxHealth -- Reset health on hit
+                    end
+                end
+            end)
+        end
+    end)
+
+    -- Prevent server-side damage (Requires server-side bypass)
+    local oldTakeDamage = humanoid.TakeDamage
+    humanoid.TakeDamage = function() end -- Blocks damage calls
+
+    -- Prevent instant death (BreakJoint Protection)
+    character.DescendantRemoving:Connect(function(descendant)
+        if humanoid:GetAttribute("Invincible") and descendant:IsA("Motor6D") then
+            descendant:Clone().Parent = descendant.Parent -- Restores joints instantly
         end
     end)
 end
@@ -74,17 +109,17 @@ local function createInvincibilityHUD()
                 humanoid:SetAttribute("Invincible", invincible)
                 
                 if invincible then
-                    preventDamage(humanoid) -- Prevent damage instantly
+                    preventDamage(humanoid, character) -- Fully block damage
                 end
             end
         end
     end)
 
-    -- Prevent damage when the character respawns
+    -- Apply on respawn
     player.CharacterAdded:Connect(function(character)
         local humanoid = character:WaitForChild("Humanoid")
         if invincible then
-            preventDamage(humanoid)
+            preventDamage(humanoid, character)
         end
     end)
 end
@@ -129,28 +164,25 @@ local function createAdminHUD()
     submitButton.TextColor3 = Color3.fromRGB(255, 255, 255)
     submitButton.Parent = frame
 
-    local locked = false -- Prevents multiple attempts
+    local locked = false
 
-    -- Admin Code Check
     submitButton.MouseButton1Click:Connect(function()
         if locked then return end
 
         if codeBox.Text == "MTLS" then
-            gui:Destroy() -- Remove the Admin HUD
-            createInvincibilityHUD() -- Show Invincibility HUD
+            gui:Destroy()
+            createInvincibilityHUD()
         else
             codeBox.Text = "LOCKED"
             codeBox.TextColor3 = Color3.fromRGB(255, 0, 0)
-            locked = true -- Locks input permanently
+            locked = true
         end
     end)
 end
 
--- Reload HUD on Death
 player.CharacterAdded:Connect(function()
-    wait(1) -- Small delay to ensure character loads
-    createAdminHUD() -- Show admin HUD first
+    wait(1)
+    createAdminHUD()
 end)
 
--- Initial Load
 createAdminHUD()
